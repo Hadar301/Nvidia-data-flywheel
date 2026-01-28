@@ -1,0 +1,92 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.gateway.name }}-config
+  namespace: {{ .Values.namespace.name }}
+data:
+  nginx.conf: |
+    events {
+      worker_connections 1024;
+    }
+
+    http {
+      # OpenShift internal DNS resolver
+      resolver 172.30.0.10 valid=30s;
+
+      # Enable access logging
+      access_log /var/log/nginx/access.log;
+      error_log /var/log/nginx/error.log;
+
+      server {
+        listen {{ .Values.gateway.port }};
+
+        # Health check endpoint for the gateway itself
+        location /healthz {
+          return 200 'OK';
+          add_header Content-Type text/plain;
+        }
+
+        # Route to Datastore (Dataset management, HuggingFace API)
+        location /v1/datasets {
+          set $upstream_datastore {{ .Values.datastore.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          proxy_pass http://$upstream_datastore;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Route to Customizer (Fine-tuning jobs, LoRA configs)
+        location /v1/customization {
+          set $upstream_customizer {{ .Values.customizer.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          proxy_pass http://$upstream_customizer;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Route to Evaluator (Model evaluation jobs)
+        location /v1/evaluation {
+          set $upstream_evaluator {{ .Values.evaluator.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          proxy_pass http://$upstream_evaluator;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Route to Guardrails (Safety filters)
+        location /v1/guardrails {
+          set $upstream_guardrail {{ .Values.guardrail.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          proxy_pass http://$upstream_guardrail;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Route to Entity Store (Model metadata, PEFT models)
+        location /v1/entity-store {
+          set $upstream_entitystore {{ .Values.entitystore.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          proxy_pass http://$upstream_entitystore;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Route to Data Flywheel API (catches all other paths)
+        # Using variable forces runtime DNS resolution, allowing service to not exist yet
+        location / {
+          set $upstream_flywheel {{ .Values.dataFlywheel.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          proxy_pass http://$upstream_flywheel;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+        }
+      }
+    }
+{{- end }}
