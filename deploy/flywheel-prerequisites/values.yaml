@@ -1,0 +1,126 @@
+# Flywheel Prerequisites Helm Chart Values
+# Infrastructure for NVIDIA Data Flywheel on OpenShift
+
+# Target namespace where all services are deployed
+namespace:
+  name: hacohen-flywheel
+
+# Data Flywheel API service name (to be deployed separately)
+dataFlywheel:
+  name: data-flywheel-api
+
+# NeMo service names (must match the actual service names in your cluster)
+datastore:
+  name: nemodatastore-sample
+
+customizer:
+  name: nemocustomizer-sample
+
+evaluator:
+  name: nemoevaluator-sample
+
+guardrail:
+  name: nemoguardrails-sample
+
+entitystore:
+  name: nemoentitystore-sample
+
+# ===== Gateway Configuration =====
+# NGINX gateway providing unified API endpoint
+gateway:
+  enabled: true
+  name: nemo-gateway
+  image:
+    repository: nginx
+    tag: "1.25-alpine"
+    pullPolicy: IfNotPresent
+  replicas: 1
+  port: 8080
+  route:
+    enabled: true
+    tls:
+      termination: edge  # HTTPS termination at route level
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+# ===== Backend Services Configuration =====
+
+# Elasticsearch for logging prompt/completion data
+# Using official Elastic Helm chart
+elasticsearch:
+  enabled: true
+  replicas: 1
+  minimumMasterNodes: 1
+  # Use HTTPS with self-signed certificates (default)
+  protocol: https
+  # OpenShift compatibility - run as anyuid
+  podSecurityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+  securityContext:
+    capabilities:
+      drop:
+        - ALL
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    runAsUser: 1000
+  # Disable sysctlInitContainer (requires privileged mode)
+  sysctlInitContainer:
+    enabled: false
+  # Resource allocation
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+  # Persistence
+  volumeClaimTemplate:
+    accessModes: [ "ReadWriteOnce" ]
+    resources:
+      requests:
+        storage: 30Gi
+  # Disable authentication but keep TLS encryption
+  esConfig:
+    elasticsearch.yml: |
+      xpack.security.enabled: false
+
+# Redis for task queue management
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false  # Disable for development
+  master:
+    persistence:
+      enabled: true
+      size: 8Gi
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 250m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+
+# MongoDB for API and metadata storage
+mongodb:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false  # Disable for development
+  persistence:
+    size: 20Gi
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 500m
+    limits:
+      memory: 1Gi
+      cpu: 1000m
