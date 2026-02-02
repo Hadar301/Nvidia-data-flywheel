@@ -77,15 +77,30 @@ data:
           proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # Route to Data Flywheel API (catches all other paths)
-        # Using variable forces runtime DNS resolution, allowing service to not exist yet
-        location / {
-          set $upstream_flywheel {{ .Values.dataFlywheel.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
-          proxy_pass http://$upstream_flywheel;
+        # Route for namespaces (needed by Data Flywheel - routes to Entity Store)
+        location /v1/namespaces {
+          set $upstream_entitystore {{ .Values.entitystore.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          proxy_pass http://$upstream_entitystore;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
           proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Route for datastore namespace operations
+        location /v1/datastore {
+          set $upstream_datastore {{ .Values.datastore.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          proxy_pass http://$upstream_datastore;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Default catch-all (return 404 for unknown paths instead of routing to non-existent service)
+        location / {
+          return 404 '{"error": "Not Found - use /v1/* endpoints for NeMo services"}';
+          add_header Content-Type application/json;
         }
       }
     }

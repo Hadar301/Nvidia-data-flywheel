@@ -78,7 +78,9 @@ The NGINX gateway routes requests as follows:
 | `/v1/evaluation`      | `nemoevaluator-sample`   | Model evaluation                  |
 | `/v1/guardrails`      | `nemoguardrails-sample`  | Safety filters                    |
 | `/v1/entity-store`    | `nemoentitystore-sample` | Model metadata, PEFT models       |
-| `/` (all other paths) | `data-flywheel-api`      | Data Flywheel API (to be deployed)|
+| `/v1/namespaces`      | `nemoentitystore-sample` | Namespace management (Entity Store)|
+| `/v1/datastore`       | `nemodatastore-sample`   | Datastore operations (namespace creation)|
+| `/` (all other paths) | Returns 404              | Unknown endpoints return error    |
 
 ## Quick Start
 
