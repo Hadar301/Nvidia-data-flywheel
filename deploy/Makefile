@@ -39,6 +39,8 @@ install-prereqs: update-prereqs
 		--set namespace.name=$(NAMESPACE) \
 		--wait \
 		--timeout 10m
+	@echo "Configuring NeMo Evaluator to use gateway for Entity Store calls..."
+	oc set env deployment/nemoevaluator-sample -n $(NAMESPACE) ENTITY_STORE_URL="http://nemo-gateway" || true
 	@echo "Installation complete!"
 	@$(MAKE) status
 
