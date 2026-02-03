@@ -31,6 +31,8 @@ install-prereqs: update-prereqs
 	@echo "Installing Data Flywheel prerequisites..."
 	@echo "Granting anyuid SCC to Elasticsearch service account..."
 	oc adm policy add-scc-to-user anyuid -z elasticsearch-master -n $(NAMESPACE) || true
+	@echo "Granting anyuid SCC to default service account (for customization jobs)..."
+	oc adm policy add-scc-to-user anyuid -z default -n $(NAMESPACE) || true
 	helm install $(RELEASE_NAME) $(CHART_DIR) \
 		--namespace $(NAMESPACE) \
 		--create-namespace \
