@@ -65,7 +65,7 @@ deploy/
 
 ## Manual Deployment
 
-If you prefer manual deployment, see [demo/data-flywheel-bp-tutorial.md](../../demo/data-flywheel-bp-tutorial.md) for step-by-step instructions.
+If you prefer manual deployment, see [knowledge/knowledge_dump_demo_workflow.md](../../knowledge/knowledge_dump_demo_workflow.md) for step-by-step instructions.
 
 ## Troubleshooting
 

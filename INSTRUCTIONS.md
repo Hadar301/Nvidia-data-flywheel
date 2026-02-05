@@ -313,7 +313,7 @@ The notebook validates:
 
 **Expected Result**: No errors in notebook execution
 
-**For comprehensive tutorial and troubleshooting**, see [demo/data-flywheel-bp-tutorial.md](demo/data-flywheel-bp-tutorial.md).
+**For comprehensive tutorial and troubleshooting**, see [knowledge/knowledge_dump_demo_workflow.md](knowledge/knowledge_dump_demo_workflow.md).
 
 ---
 
@@ -449,7 +449,7 @@ make verify
 - NeMo-Microservices/deploy/nemo-infra/values.yaml - Storage classes
 
 ### Documentation
-- [demo/data-flywheel-bp-tutorial.md](demo/data-flywheel-bp-tutorial.md) - Comprehensive deployment tutorial
+- [knowledge/knowledge_dump_demo_workflow.md](knowledge/knowledge_dump_demo_workflow.md) - Demo workflow guide and validation
 - [knowledge/knowledge_dump_NeMo.md](knowledge/knowledge_dump_NeMo.md) - NeMo Microservices troubleshooting
 - [knowledge/knowledge_dump_flywheel_prereqs.md](knowledge/knowledge_dump_flywheel_prereqs.md) - Prerequisites troubleshooting
 - [knowledge/knowledge_dump_DataFlywheel.md](knowledge/knowledge_dump_DataFlywheel.md) - Data Flywheel troubleshooting
@@ -471,4 +471,4 @@ make verify
 For issues, questions, or contributions:
 - Review troubleshooting guides in the `knowledge/` directory
 - Check existing issues and documentation
-- Consult the comprehensive tutorial at [demo/data-flywheel-bp-tutorial.md](demo/data-flywheel-bp-tutorial.md)
+- Consult the demo workflow guide at [knowledge/knowledge_dump_demo_workflow.md](knowledge/knowledge_dump_demo_workflow.md)

@@ -584,7 +584,7 @@ customized-eval: function_name=0.45, tool_calling_correctness=0.27
 - [deploy/values-openshift.yaml](../deploy/values-openshift.yaml) - Data Flywheel OpenShift configuration
 - [deploy/flywheel-prerequisites/](../deploy/flywheel-prerequisites/) - Infrastructure Helm chart
 - [deploy/flywheel-prerequisites/templates/nemo-gateway-configmap.yaml](../deploy/flywheel-prerequisites/templates/nemo-gateway-configmap.yaml) - Gateway configuration with mock endpoints
-- [demo/data-flywheel-bp-tutorial.md](../demo/data-flywheel-bp-tutorial.md) - Deployment tutorial and troubleshooting guide
+- [knowledge_dump_demo_workflow.md](knowledge_dump_demo_workflow.md) - Demo workflow guide and validation
 - [.env.example](../.env.example) - Environment variables template
 
 ---

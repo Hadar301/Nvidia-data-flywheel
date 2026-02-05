@@ -67,5 +67,5 @@ This project builds upon:
 ## Documentation
 
 - [INSTRUCTIONS.md](INSTRUCTIONS.md) - Complete installation and configuration guide
-- [demo/data-flywheel-bp-tutorial.md](demo/data-flywheel-bp-tutorial.md) - Comprehensive tutorial and validation
+- [knowledge/knowledge_dump_demo_workflow.md](knowledge/knowledge_dump_demo_workflow.md) - Demo workflow guide and validation
 - [knowledge/](knowledge/) - Troubleshooting guides for each component
