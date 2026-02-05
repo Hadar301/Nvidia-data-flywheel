@@ -73,12 +73,15 @@ The NGINX gateway routes requests as follows:
 | Path                  | Target Service           | Purpose                           |
 |-----------------------|--------------------------|-----------------------------------|
 | `/healthz`            | Gateway itself           | Health check endpoint             |
-| `/v1/datasets`        | `nemodatastore-sample`   | Dataset management, HuggingFace   |
+| `/v1/datasets`        | `nemodatastore-sample`   | Dataset management                |
 | `/v1/customization`   | `nemocustomizer-sample`  | Fine-tuning jobs, LoRA configs    |
 | `/v1/evaluation`      | `nemoevaluator-sample`   | Model evaluation                  |
 | `/v1/guardrails`      | `nemoguardrails-sample`  | Safety filters                    |
 | `/v1/entity-store`    | `nemoentitystore-sample` | Model metadata, PEFT models       |
-| `/` (all other paths) | `data-flywheel-api`      | Data Flywheel API (to be deployed)|
+| `/v1/namespaces`      | `nemoentitystore-sample` | Namespace management (Entity Store)|
+| `/v1/datastore`       | `nemodatastore-sample`   | Datastore operations              |
+| `/v1/hf`              | `nemodatastore-sample`   | HuggingFace API (repos, files)    |
+| `/` (all other paths) | Returns 404              | Unknown endpoints return error    |
 
 ## Quick Start
 
