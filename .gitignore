@@ -1,3 +1,4 @@
+local_scripts/
 .env
 
 # Helm artifacts
@@ -6,5 +7,5 @@ deploy/flywheel-prerequisites/Chart.lock
 
 .claude
 
-data-flywheel/*
-NeMo-Microservices/*
+data-flywheel/
+NeMo-Microservices/
