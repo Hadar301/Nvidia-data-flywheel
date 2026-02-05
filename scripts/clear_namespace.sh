@@ -1,5 +1,17 @@
 #!/bin/bash
-NAMESPACE="hacohen-flywheel"
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Load NAMESPACE from .env file
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    source "$PROJECT_ROOT/.env"
+fi
+
+# Use default if not set
+NAMESPACE="${NAMESPACE:-hacohen-flywheel}"
+
 # Check if namespace exists before proceeding
 if ! oc get namespace $NAMESPACE &>/dev/null; then
   echo "Namespace '$NAMESPACE' does not exist. Exiting."
