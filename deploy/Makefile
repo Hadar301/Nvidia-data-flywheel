@@ -153,7 +153,7 @@ port-forward-mongodb:
 # Data Flywheel Targets
 # ============================================================================
 
-install-flywheel: install-prereqs
+install-flywheel:
 	@echo "=== Installing Data Flywheel Components ==="
 	@echo ""
 	@# Check that data-flywheel chart directory exists
@@ -175,6 +175,17 @@ install-flywheel: install-prereqs
 		echo "ERROR: HF_TOKEN not set. Please configure .env file"; \
 		exit 1; \
 	fi
+	@# Check that prerequisites are installed
+	@echo "Checking if prerequisites are installed..."
+	@if ! helm list -n $(NAMESPACE) | grep -q "$(RELEASE_NAME)"; then \
+		echo ""; \
+		echo "ERROR: Prerequisites not installed"; \
+		echo "Please run: make install-prereqs"; \
+		echo ""; \
+		exit 1; \
+	fi
+	@echo "✓ Prerequisites already installed"
+	@echo ""
 	@echo "Configuring NeMo Evaluator to use gateway..."
 	oc set env deployment/nemoevaluator-sample -n $(NAMESPACE) ENTITY_STORE_URL="http://nemo-gateway" || true
 	@echo "Waiting for NeMo Evaluator to restart..."
