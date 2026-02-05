@@ -58,6 +58,45 @@ jupyter notebook notebooks/data-flywheel-bp-tutorial.ipynb
 
 For detailed installation instructions, troubleshooting, and configuration options, see [INSTRUCTIONS.md](INSTRUCTIONS.md).
 
+## Repository Structure
+
+After running `./scripts/clone.sh`, your directory structure will look like this:
+
+```
+Nvidia-data-flywheel/
+├── .env                           # Environment configuration (created from .env.example)
+├── .env.example                   # Template for environment variables
+├── README.md                      # This file
+├── INSTRUCTIONS.md                # Detailed installation guide
+├── scripts/
+│   ├── clone.sh                   # Clone required repositories
+│   ├── install-nemo.sh            # Install NeMo Microservices
+│   ├── port-forward.sh            # Port-forward cluster services
+│   └── clear_namespace.sh         # Cleanup script
+├── deploy/
+│   ├── Makefile                   # Deployment automation
+│   ├── flywheel-prerequisites/    # Infrastructure Helm chart (Elasticsearch, Redis, MongoDB, Gateway)
+│   └── flywheel-components/       # Data Flywheel configuration
+│       ├── README.md
+│       └── values-openshift.yaml  # OpenShift-specific values
+├── knowledge/                     # Troubleshooting documentation
+│   ├── knowledge_dump_NeMo.md
+│   ├── knowledge_dump_flywheel_prereqs.md
+│   ├── knowledge_dump_DataFlywheel.md
+│   └── knowledge_dump_demo_workflow.md
+├── NeMo-Microservices/            # Cloned: NeMo platform charts
+│   └── deploy/
+│       ├── nemo-infra/            # PostgreSQL, MinIO, Milvus, Argo, Volcano
+│       └── nemo-instances/        # NeMo services (Datastore, Evaluator, Customizer, etc.)
+└── data-flywheel/                 # Cloned: Data Flywheel Helm chart and application code
+    ├── deploy/
+    │   └── helm/
+    │       └── data-flywheel/     # Helm chart for Data Flywheel services
+    ├── src/                       # Data Flywheel Python application
+    └── notebooks/                 # Demo and validation notebooks
+        └── data-flywheel-bp-tutorial.ipynb
+```
+
 ## References
 
 This project builds upon:
