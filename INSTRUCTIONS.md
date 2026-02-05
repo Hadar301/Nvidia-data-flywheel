@@ -282,6 +282,18 @@ oc port-forward -n $NAMESPACE svc/df-mlflow-service 5000:5000 &
 oc port-forward -n $NAMESPACE svc/df-flower-service 5555:5555 &
 ```
 
+### Prepare Data Flywheel Repository
+
+Before running the validation notebook, set up Git LFS to download required model files:
+
+```bash
+cd data-flywheel
+sudo apt-get update && sudo apt-get install -y git-lfs
+git lfs install
+git lfs pull
+cd ..
+```
+
 ### Run Validation Notebook
 
 Run the comprehensive validation notebook to test the entire stack:
