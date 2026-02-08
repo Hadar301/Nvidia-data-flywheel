@@ -1,0 +1,40 @@
+# Core dependencies for Data Flywheel Blueprint Notebook
+# Based on pyproject.toml [project.dependencies] - production dependencies only
+
+# Web framework and HTTP
+aiohttp>=3.11.16
+fastapi>=0.115.12
+httpx>=0.28.1
+uvicorn>=0.34.0
+h11==0.16.0
+
+# Search and Database
+elasticsearch==8.17.2
+pymongo>=4.12.0
+
+# Task Queue
+celery[redis]>=5.5.1
+
+# AI/ML Libraries
+openai>=1.12.0
+huggingface-hub>=0.20.3
+tiktoken>=0.9.0
+scikit-learn>=1.7.0
+
+# Data Processing
+pandas>=2.2.3
+
+# Experiment Tracking
+mlflow==2.22.0
+
+# Configuration
+pydantic-settings>=2.9.1
+
+# General utilities
+requests>=2.31.0
+
+# Notebook-specific dependencies (minimal set for running the notebook)
+jupyter>=1.1.1
+ipython>=8.35.0
+matplotlib==3.10.3
+nemo-microservices==1.1.0
