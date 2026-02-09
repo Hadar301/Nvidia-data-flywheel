@@ -2,6 +2,7 @@
 OpenShift AI Configuration for Data Flywheel
 Configure all service endpoints for in-cluster access
 """
+
 import os
 
 # Namespace where all services are deployed
@@ -20,18 +21,21 @@ NIM_BASE_URL = f"http://nemo-gateway.{NAMESPACE}.svc.cluster.local"
 DATASTORE_BASE_URL = f"http://nemodatastore-sample.{NAMESPACE}.svc.cluster.local:8000"
 
 # External route (for outside-cluster access if needed)
-NIM_EXTERNAL_URL = "http://nemo-gateway-hacohen-flywheel.apps.ai-dev05.kni.syseng.devcluster.openshift.com"
+NIM_EXTERNAL_URL = (
+    "http://nemo-gateway-hacohen-flywheel.apps.ai-dev05.kni.syseng.devcluster.openshift.com"
+)
+
 
 def configure_environment():
     """Set all environment variables for OpenShift AI"""
-    os.environ['API_BASE_URL'] = API_BASE_URL
-    os.environ['ELASTICSEARCH_URL'] = ELASTICSEARCH_URL
-    os.environ['MONGODB_URL'] = MONGODB_URL
-    os.environ['REDIS_URL'] = REDIS_URL
-    os.environ['MLFLOW_TRACKING_URI'] = MLFLOW_TRACKING_URI
-    os.environ['NEMO_BASE_URL'] = NEMO_BASE_URL
-    os.environ['NIM_BASE_URL'] = NIM_BASE_URL
-    os.environ['DATASTORE_BASE_URL'] = DATASTORE_BASE_URL
+    os.environ["API_BASE_URL"] = API_BASE_URL
+    os.environ["ELASTICSEARCH_URL"] = ELASTICSEARCH_URL
+    os.environ["MONGODB_URL"] = MONGODB_URL
+    os.environ["REDIS_URL"] = REDIS_URL
+    os.environ["MLFLOW_TRACKING_URI"] = MLFLOW_TRACKING_URI
+    os.environ["NEMO_BASE_URL"] = NEMO_BASE_URL
+    os.environ["NIM_BASE_URL"] = NIM_BASE_URL
+    os.environ["DATASTORE_BASE_URL"] = DATASTORE_BASE_URL
 
     print("✓ OpenShift AI environment configured")
     print(f"  Namespace: {NAMESPACE}")
@@ -39,6 +43,7 @@ def configure_environment():
     print(f"  Elasticsearch: {ELASTICSEARCH_URL}")
     print(f"  MLflow: {MLFLOW_TRACKING_URI}")
     print(f"  NeMo Gateway: {NEMO_BASE_URL}")
+
 
 # Auto-configure on import
 configure_environment()
