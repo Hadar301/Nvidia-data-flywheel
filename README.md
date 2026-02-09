@@ -60,30 +60,42 @@ For detailed installation instructions, troubleshooting, and configuration optio
 
 ## Repository Structure
 
-After running `./scripts/clone.sh`, your directory structure will look like this:
-
 ```
 Nvidia-data-flywheel/
-├── .env                           # Environment configuration (created from .env.example)
-├── .env.example                   # Template for environment variables
-├── README.md                      # This file
-├── INSTRUCTIONS.md                # Detailed installation guide
+├── deploy/
+│   ├── flywheel-components/       # Data Flywheel configuration
+│   │   ├── README.md
+│   │   └── values-openshift.yaml  # OpenShift-specific values
+│   ├── flywheel-prerequisites/    # Infrastructure Helm chart (Elasticsearch, Redis, MongoDB, Gateway)
+│   │   ├── charts/
+│   │   ├── templates/
+│   │   ├── Chart.lock
+│   │   ├── Chart.yaml
+│   │   ├── README.md
+│   │   └── values.yaml
+│   ├── Makefile                   # Deployment automation
+│   └── values-openshift.yaml
+├── knowledge/                     # Troubleshooting documentation
+│   ├── knowledge_dump_DataFlywheel.md
+│   ├── knowledge_dump_NeMo.md
+│   ├── knowledge_dump_demo_workflow.md
+│   └── knowledge_dump_flywheel_prereqs.md
+├── openshift-ai/                  # OpenShift AI workbench configuration
+│   ├── README.md                  # Instructions for running on OpenShift AI
+│   ├── config.py                  # In-cluster service endpoints
+│   ├── data-flywheel-bp-tutorial-RHOAI.ipynb
+│   ├── demo.ipynb
+│   └── requirements.txt           # Python dependencies
 ├── scripts/
+│   ├── clear_namespace.sh         # Cleanup script
 │   ├── clone.sh                   # Clone required repositories
 │   ├── install-nemo.sh            # Install NeMo Microservices
-│   ├── port-forward.sh            # Port-forward cluster services
-│   └── clear_namespace.sh         # Cleanup script
-├── deploy/
-│   ├── Makefile                   # Deployment automation
-│   ├── flywheel-prerequisites/    # Infrastructure Helm chart (Elasticsearch, Redis, MongoDB, Gateway)
-│   └── flywheel-components/       # Data Flywheel configuration
-│       ├── README.md
-│       └── values-openshift.yaml  # OpenShift-specific values
-├── knowledge/                     # Troubleshooting documentation
-│   ├── knowledge_dump_NeMo.md
-│   ├── knowledge_dump_flywheel_prereqs.md
-│   ├── knowledge_dump_DataFlywheel.md
-│   └── knowledge_dump_demo_workflow.md
+│   └── port-forward.sh            # Port-forward cluster services
+├── INSTRUCTIONS.md                # Detailed installation guide
+├── LICENSE
+└── README.md                      # This file
+
+After running ./scripts/clone.sh:
 ├── NeMo-Microservices/            # Cloned: NeMo platform charts
 │   └── deploy/
 │       ├── nemo-infra/            # PostgreSQL, MinIO, Milvus, Argo, Volcano
