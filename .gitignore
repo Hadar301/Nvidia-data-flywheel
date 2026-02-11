@@ -1,0 +1,13 @@
+local_scripts/
+.env
+openshift-ai/demo.ipynb
+
+# Helm artifacts
+deploy/flywheel-prerequisites/charts/
+deploy/flywheel-prerequisites/Chart.lock
+
+.claude
+
+# git clones
+data-flywheel/
+NeMo-Microservices/
