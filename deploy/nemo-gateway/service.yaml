@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nemo-gateway
+  namespace: hacohen-flywheel
+spec:
+  selector:
+    app: nemo-gateway
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+    name: http
+  type: ClusterIP
