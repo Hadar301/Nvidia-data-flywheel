@@ -31,8 +31,8 @@ Before starting, ensure you have:
 
 This installation process deploys:
 1. **NeMo Microservices** - Platform for model serving, customization, and evaluation
-2. **Flywheel Prerequisites** - Infrastructure services (Elasticsearch, Redis, MongoDB, Gateway)
-3. **Data Flywheel Components** - API, Celery workers, MLflow tracking
+2. **NeMo Gateway** - NGINX proxy for unified NeMo service access
+3. **Data Flywheel with Bundled Infrastructure** - Complete stack including Elasticsearch, Redis, MongoDB, API, Celery workers, MLflow tracking
 4. **Validation** - End-to-end testing via Jupyter notebook
 
 ---
@@ -48,14 +48,16 @@ cd Nvidia-data-flywheel
 cp .env.example .env
 ```
 
-Edit `.env` and set your values:
+Edit `.env` and set your values (without quotes):
 
 ```bash
-NAMESPACE="your-namespace-name"
-NVIDIA_API_KEY="nvapi-your-nvidia-api-key"
-NGC_API_KEY="your-ngc-api-key"
-HF_TOKEN="hf_your-huggingface-token"
+NAMESPACE=your-namespace-name
+NVIDIA_API_KEY=nvapi-your-nvidia-api-key
+NGC_API_KEY=your-ngc-api-key
+HF_TOKEN=hf_your-huggingface-token
 ```
+
+**Important**: Do not use quotes around the values in the `.env` file.
 
 ### Load Environment Variables
 
@@ -65,9 +67,40 @@ source .env
 
 ---
 
+## Quick Start with Makefile
+
+For a streamlined installation, use the provided Makefile targets:
+
+```bash
+cd deploy
+
+# Step 1: Clone repositories
+make clone
+
+# Step 2: Install NeMo Microservices
+make install-nemo
+
+# Step 3: Install Data Flywheel with bundled infrastructure
+make install-flywheel
+
+# Check deployment status
+make status
+```
+
+The Makefile automates all installation steps. Continue reading for detailed manual installation instructions.
+
+---
+
 ## Step 1: Clone Required Repositories
 
-Run the clone script to download NeMo-Microservices and data-flywheel repositories:
+### Option A: Using Makefile (Recommended)
+
+```bash
+cd deploy
+make clone
+```
+
+### Option B: Manual
 
 ```bash
 ./scripts/clone.sh
@@ -144,11 +177,20 @@ The `scripts/install-nemo.sh` script automates NeMo deployment with:
 
 ### Run Installation
 
+### Option A: Using Makefile (Recommended)
+
+```bash
+cd deploy
+make install-nemo
+```
+
+### Option B: Manual
+
 ```bash
 ./scripts/install-nemo.sh
 ```
 
-The script will:
+The installation will:
 1. Validate prerequisites (`oc` and `helm` CLIs)
 2. Load configuration from `.env`
 3. Create namespace and NGC secrets
@@ -169,30 +211,50 @@ If you encounter errors during installation, see [knowledge/knowledge_dump_NeMo.
 
 ---
 
-## Step 3: Install Flywheel Prerequisites
+## Step 3: Deploy Data Flywheel with Bundled Infrastructure
 
-Deploy infrastructure services (Elasticsearch, Redis, MongoDB, NeMo Gateway):
+The Data Flywheel installation includes three automated steps:
+1. Configure OpenShift security (SCC grants, RBAC, file permissions)
+2. Deploy NeMo Gateway (NGINX proxy for unified NeMo service access)
+3. Install Data Flywheel Helm chart (with Elasticsearch, Redis, MongoDB)
+
+### Option A: Using Makefile (Recommended)
 
 ```bash
 cd deploy
-make install-prereqs
+make install-flywheel
 ```
 
-This command:
-1. Grants `anyuid` SCC to Elasticsearch and default service accounts
-2. Updates Helm chart dependencies
-3. Installs all infrastructure services (10-minute timeout)
-4. Configures NeMo Evaluator to use the gateway
-5. Displays deployment status
+The Makefile will automatically:
+- Run the security configuration script
+- Deploy the nemo-gateway
+- Install the data-flywheel Helm chart with all required secrets
+- Display deployment status
 
-### Components Installed
+### Option B: Manual Installation
 
-| Component | Version | Purpose | Storage |
-|-----------|---------|---------|---------|
-| **Elasticsearch** | 8.5.1 | Stores training/evaluation data and prompts | 30Gi PVC |
-| **Redis** | 24.x | Celery task queue broker and results backend | 8Gi PVC |
-| **MongoDB** | 18.x | API metadata and workflow state storage | 20Gi PVC |
-| **NGINX Gateway** | 1.25-alpine | Unified routing to NeMo services + mock Entity Store endpoints | None |
+If you prefer manual steps, follow these commands:
+
+#### 3a. Configure OpenShift Security
+
+```bash
+cd scripts
+./configure-data-flywheel-security.sh
+```
+
+This script:
+1. Grants `anyuid` SCC to default and data-flywheel-sa service accounts
+2. Configures NeMo Evaluator to use the gateway
+3. Fixes RBAC permissions for NeMo Evaluator (adds delete permission for secrets)
+4. Fixes base model file permissions for customization jobs
+5. Verifies all security configurations
+
+#### 3b. Deploy NeMo Gateway
+
+```bash
+cd ../deploy
+oc apply -k nemo-gateway/
+```
 
 ### Gateway Routes
 
@@ -207,54 +269,77 @@ The gateway provides unified access to NeMo services:
 - `/v1/hf` → nemodatastore-sample (HuggingFace API)
 - `/v1/models/{namespace}/{name}` → Mock endpoint (base NIM metadata)
 
-**For detailed troubleshooting**, see [knowledge/knowledge_dump_flywheel_prereqs.md](knowledge/knowledge_dump_flywheel_prereqs.md).
+#### 3c. Install Data Flywheel Helm Chart
+
+```bash
+# Ensure environment variables are loaded
+source ../.env
+
+# Navigate to data-flywheel Helm chart
+cd ../data-flywheel/deploy/helm/data-flywheel
+
+# Update Helm dependencies
+helm dependency update
+
+# Install data-flywheel with bundled infrastructure
+helm install data-flywheel . \
+    --values ../../../../deploy/flywheel-components/values-openshift-standalone.yaml \
+    --set secrets.ngcApiKey="${NGC_API_KEY}" \
+    --set secrets.nvidiaApiKey="${NVIDIA_API_KEY}" \
+    --set secrets.hfToken="${HF_TOKEN}" \
+    --set secrets.llmJudgeApiKey="${NVIDIA_API_KEY}" \
+    --set secrets.embApiKey="${NVIDIA_API_KEY}" \
+    --set "imagePullSecrets[0].password=${NGC_API_KEY}" \
+    --namespace=${NAMESPACE} \
+    --timeout=10m
+```
 
 ---
 
-## Step 4: Deploy Data Flywheel Components
+### Components Deployed
 
-Install Data Flywheel services using the integrated Makefile:
+| Component | Version | Purpose | Storage |
+|-----------|---------|---------|---------|
+| **df-elasticsearch** | 8.12.2 | Stores training/evaluation data and prompts | Ephemeral (emptyDir) |
+| **df-redis** | 7.2-alpine | Celery task queue broker and results backend | Ephemeral (emptyDir) |
+| **df-mongodb** | 7.0 | API metadata and workflow state storage | Ephemeral (emptyDir) |
+| **df-api** | 0.3.0 | Data Flywheel REST API | - |
+| **df-celery-worker** | 0.3.0 | Async job processor (evaluation, fine-tuning) | - |
+| **df-celery-parent-worker** | 0.3.0 | Parent job orchestrator | - |
+| **df-mlflow** | 2.22.0 | Experiment tracking server | - |
+| **df-flower** | 0.3.0 | Celery task monitoring UI | - |
+| **nemo-gateway** | 1.25-alpine | Unified routing to NeMo services | - |
 
-```bash
-cd deploy
-make install-flywheel
-```
-
-This command:
-1. Ensures prerequisites are installed
-2. Validates environment variables (NGC_API_KEY, NVIDIA_API_KEY, HF_TOKEN)
-3. Configures NeMo Evaluator to use the gateway
-4. Fixes RBAC permissions for NeMo Evaluator (adds delete permission for secrets)
-5. Fixes model file permissions for customization jobs
-6. Deploys Data Flywheel Helm chart with OpenShift values
-7. Configures OpenShift security (service accounts, SCCs)
-8. Displays deployment status
+**Note**: Infrastructure uses ephemeral storage - data is lost on pod restart. For production use with persistence, consider using the traditional flywheel-prerequisites approach with Bitnami charts.
 
 ### Key Configuration
 
-The deployment uses [deploy/flywheel-components/values-openshift.yaml](deploy/flywheel-components/values-openshift.yaml) with:
+The deployment uses [deploy/flywheel-components/values-openshift-standalone.yaml](deploy/flywheel-components/values-openshift-standalone.yaml) with:
 
 #### Service Endpoints
 - **NeMo Gateway**: `http://nemo-gateway` (unified access to all NeMo services)
 - **NIM for Inference**: `http://meta-llama3-1b-instruct:8000`
-- **Infrastructure Services**: Elasticsearch, Redis, MongoDB (cluster-internal DNS)
+- **Infrastructure Services**:
+  - Elasticsearch: `http://df-elasticsearch-service:9200`
+  - Redis: `redis://df-redis-service:6379/0`
+  - MongoDB: `mongodb://df-mongodb-service:27017`
 
 #### Remote API Services (conserves cluster GPU resources)
 - **LLM Judge**: NVIDIA API (`meta/llama-3.3-70b-instruct`)
 - **Embeddings**: NVIDIA API (`nvidia/llama-3.2-nv-embedqa-1b-v2`)
 
-#### Deployed Components
-- **df-api**: Data Flywheel REST API (port 8000)
-- **df-celery-worker**: Async job processor (evaluation, fine-tuning)
-- **df-celery-parent-worker**: Parent job orchestrator
-- **df-mlflow**: Experiment tracking server (port 5000)
-- **df-flower**: Celery task monitoring UI (port 5555)
+Verify all pods are running:
+
+```bash
+cd ../../../../
+oc get pods -n $NAMESPACE | grep "^df-"
+```
+
+**Expected**: All df-* pods should show `1/1 Running`
 
 **For detailed troubleshooting**, see [knowledge/knowledge_dump_DataFlywheel.md](knowledge/knowledge_dump_DataFlywheel.md).
 
----
-
-## Step 5: Validate Deployment
+## Step 4: Validate Deployment
 
 ### Port-Forward Services
 
@@ -319,18 +404,49 @@ The notebook validates:
 
 ## Useful Commands
 
-### Check Deployment Status
+### Makefile Commands
+
+The `deploy/Makefile` provides convenient automation for common tasks:
 
 ```bash
-# Check all deployments
+cd deploy
+
+# Installation workflow
+make clone            # Clone required repositories
+make install-nemo     # Install NeMo Microservices
+make install-flywheel # Install Data Flywheel with bundled infrastructure
+
+# Monitoring and utilities
+make status           # Check deployment status (pods, services, routes)
+make clean            # Clean up namespace (development only)
+make help             # Show all available commands
+```
+
+### Check Deployment Status
+
+#### Using Makefile (Recommended)
+
+```bash
 cd deploy
 make status
+```
 
-# Check Data Flywheel specific status
-make status-flywheel
+This displays Helm releases, pods, services, and routes in the namespace.
 
-# Check prerequisite services health
-make verify
+#### Manual Commands
+
+```bash
+# Check all pods
+oc get pods -n $NAMESPACE
+
+# Check Data Flywheel pods
+oc get pods -n $NAMESPACE | grep "^df-"
+
+# Check NeMo Gateway
+oc get pods,svc,route -n $NAMESPACE -l app=nemo-gateway
+
+# Check Helm releases
+helm list -n $NAMESPACE
 ```
 
 ### View Logs
@@ -352,24 +468,48 @@ make logs-gateway
 ### Upgrade Deployments
 
 ```bash
-# Upgrade flywheel prerequisites
-make upgrade-prereqs
-
 # Upgrade Data Flywheel
-make upgrade-flywheel
+source .env
+cd data-flywheel/deploy/helm/data-flywheel
+helm dependency update
+helm upgrade data-flywheel . \
+    --values ../../../../deploy/flywheel-components/values-openshift-standalone.yaml \
+    --set secrets.ngcApiKey="${NGC_API_KEY}" \
+    --set secrets.nvidiaApiKey="${NVIDIA_API_KEY}" \
+    --set secrets.hfToken="${HF_TOKEN}" \
+    --set secrets.llmJudgeApiKey="${NVIDIA_API_KEY}" \
+    --set secrets.embApiKey="${NVIDIA_API_KEY}" \
+    --set "imagePullSecrets[0].password=${NGC_API_KEY}" \
+    --namespace ${NAMESPACE} \
+    --timeout=10m
 ```
 
 ### Cleanup
 
-```bash
-# Uninstall Data Flywheel (keeps prerequisites)
-make uninstall-flywheel
+#### Using Makefile (Recommended)
 
-# Uninstall prerequisites
-make uninstall-prereqs
+```bash
+cd deploy
+make clean
+```
+
+This runs the automated cleanup script that removes all resources from the namespace.
+
+#### Manual Cleanup
+
+```bash
+# Uninstall Data Flywheel
+helm uninstall data-flywheel -n $NAMESPACE
+
+# Uninstall NeMo Gateway
+oc delete -k deploy/nemo-gateway/
+
+# Uninstall NeMo
+helm uninstall nemo-instances -n $NAMESPACE
+helm uninstall nemo-infra -n $NAMESPACE
 
 # Complete namespace cleanup (development only)
-../scripts/clear_namespace.sh
+./scripts/clear_namespace.sh
 ```
 
 ---
@@ -415,28 +555,31 @@ oc rollout status deployment/nemoevaluator-sample -n $NAMESPACE
 
 ### Customization Jobs Permission Denied
 
-If fine-tuning jobs fail with permission errors:
+If fine-tuning jobs fail with permission errors (`Permission denied: '/mount/models/llama32_1b-instruct_2_0'`):
 
 ```bash
-# Fix model file ownership (run from deploy directory)
-make install-flywheel
-# The install-flywheel target includes permission fixes
+# Re-run the security configuration script to fix permissions
+./scripts/configure-data-flywheel-security.sh
 ```
 
 ### Infrastructure Services Not Ready
 
 ```bash
 # Check individual service status
-oc get pods -n $NAMESPACE | grep -E "elasticsearch|mongodb|redis|gateway"
+oc get pods -n $NAMESPACE | grep -E "^df-"
 
 # Check specific service logs
-oc logs -n $NAMESPACE statefulset/elasticsearch-master --tail=50
-oc logs -n $NAMESPACE deployment/flywheel-infra-mongodb --tail=50
-oc logs -n $NAMESPACE deployment/flywheel-infra-redis-master --tail=50
-
-# Manually verify services
-make verify
+oc logs -n $NAMESPACE deployment/df-elasticsearch-deployment --tail=50
+oc logs -n $NAMESPACE deployment/df-mongodb-deployment --tail=50
+oc logs -n $NAMESPACE deployment/df-redis-deployment --tail=50
+oc logs -n $NAMESPACE deployment/nemo-gateway --tail=50
 ```
+
+### Image Pull Errors
+
+If you see `ImagePullBackOff` errors with unauthorized errors from `bds-docker-release.jfrog.io`:
+
+Your cluster redirects Docker Hub pulls to a JFrog registry. The `values-openshift-standalone.yaml` file already includes the fix with `docker.io/library/` prefixes for MongoDB and Redis images.
 
 ---
 
@@ -444,7 +587,8 @@ make verify
 
 ### Configuration Files
 - [.env.example](.env.example) - Environment variable template
-- [deploy/flywheel-components/values-openshift.yaml](deploy/flywheel-components/values-openshift.yaml) - OpenShift-specific Helm values
+- [deploy/flywheel-components/values-openshift-standalone.yaml](deploy/flywheel-components/values-openshift-standalone.yaml) - Standalone deployment with bundled infrastructure
+- [deploy/nemo-gateway/](deploy/nemo-gateway/) - NeMo Gateway Kubernetes manifests
 - NeMo-Microservices/deploy/nemo-instances/values.yaml - GPU tolerations and resources
 - NeMo-Microservices/deploy/nemo-infra/values.yaml - Storage classes
 
@@ -457,12 +601,9 @@ make verify
 ### Scripts
 - [scripts/clone.sh](scripts/clone.sh) - Clone required repositories
 - [scripts/install-nemo.sh](scripts/install-nemo.sh) - Automated NeMo Microservices installation
+- [scripts/configure-data-flywheel-security.sh](scripts/configure-data-flywheel-security.sh) - OpenShift security configuration
 - [scripts/port-forward.sh](scripts/port-forward.sh) - Port-forward all services for local access
 - [scripts/clear_namespace.sh](scripts/clear_namespace.sh) - Cleanup script for development/testing
-
-### Makefile Targets
-- [deploy/Makefile](deploy/Makefile) - All deployment automation
-- [deploy/flywheel-components/README.md](deploy/flywheel-components/README.md) - Makefile deployment details
 
 ---
 
