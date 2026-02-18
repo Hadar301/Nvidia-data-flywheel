@@ -1,76 +1,59 @@
-# Data Flywheel Components - Makefile-Based Deployment
+# Data Flywheel Components - Values Files
 
-This directory organizes Data Flywheel deployment for OpenShift using Makefile automation.
+This directory contains Helm values files for deploying Data Flywheel on OpenShift.
 
-## Overview
+## Files
 
-The Data Flywheel deployment is now integrated into the main Makefile at `deploy/Makefile` for streamlined installation.
+- **values-openshift-standalone.yaml** - OpenShift deployment with bundled infrastructure (Elasticsearch, Redis, MongoDB)
 
-## Quick Start
+## Configuration
+
+The `values-openshift-standalone.yaml` file configures:
+
+- **Bundled infrastructure**: Enables Elasticsearch, Redis, MongoDB from the data-flywheel Helm chart
+- **NeMo Gateway integration**: Routes NeMo service calls through `http://nemo-gateway`
+- **Remote services**: Uses NVIDIA API for LLM judge and embeddings (conserves cluster GPU resources)
+- **OpenShift compatibility**:
+  - Full registry paths for MongoDB and Redis images (`docker.io/library/...`)
+  - Sets `HOME=/tmp` for writable directories
+  - Ephemeral storage (emptyDir) for development/testing
+
+## Usage
+
+This values file is used by the Makefile:
 
 ```bash
 cd deploy
 make install-flywheel
 ```
 
-This command:
-1. Ensures flywheel-prerequisites are installed (Elasticsearch, Redis, MongoDB, Gateway)
-2. Deploys Data Flywheel services from the cloned data-flywheel repository
-3. Configures OpenShift security (anyuid SCC, service accounts)
-4. Patches deployments to use the correct security context
+The Makefile automatically:
+1. Configures OpenShift security (SCC grants, RBAC)
+2. Deploys nemo-gateway
+3. Installs data-flywheel with this values file
 
-## Configuration
+## Manual Installation
 
-The deployment uses [values-openshift.yaml](values-openshift.yaml) (located in this directory) which configures:
+For manual installation using this values file:
 
-- **Disabled embedded services**: Uses existing Elasticsearch, Redis, MongoDB from flywheel-prerequisites
-- **NeMo service endpoints**: Routes through nemo-gateway for unified access
-- **Remote LLM judge and embeddings**: Uses NVIDIA API to conserve cluster GPU resources
-- **OpenShift compatibility**: Sets HOME=/tmp for writable directories
+```bash
+# Ensure environment variables are set
+source ../.env
 
-## Prerequisites
-
-Before running `make install-flywheel`, ensure:
-
-1. **.env file** configured in repository root with:
-   - `NAMESPACE` - Your OpenShift namespace
-   - `NVIDIA_API_KEY` - For remote LLM judge/embeddings
-   - `NGC_API_KEY` - For pulling NVIDIA containers
-   - `HF_TOKEN` - For HuggingFace datasets
-
-2. **NeMo Microservices** deployed (via scripts/install-nemo.sh)
-
-3. **data-flywheel repository** cloned (via scripts/clone.sh) to `../data-flywheel/`
-
-## Makefile Targets
-
-| Target | Description |
-|--------|-------------|
-| `make install-flywheel` | Install Data Flywheel (includes prerequisites) |
-| `make configure-flywheel-security` | Configure OpenShift security (service accounts, SCCs) |
-| `make upgrade-flywheel` | Upgrade existing Data Flywheel deployment |
-| `make uninstall-flywheel` | Remove Data Flywheel installation |
-| `make status-flywheel` | Check Data Flywheel deployment status |
-
-## Directory Structure
-
-```
-deploy/
-├── Makefile                    # Main deployment automation
-├── flywheel-prerequisites/     # Infrastructure Helm chart
-└── flywheel-components/        # This directory
-    ├── README.md               # This file
-    └── values-openshift.yaml   # OpenShift-specific Helm values
+# Install
+cd ../data-flywheel/deploy/helm/data-flywheel
+helm install data-flywheel . \
+    --values ../../../../deploy/flywheel-components/values-openshift-standalone.yaml \
+    --set secrets.ngcApiKey="${NGC_API_KEY}" \
+    --set secrets.nvidiaApiKey="${NVIDIA_API_KEY}" \
+    --set secrets.hfToken="${HF_TOKEN}" \
+    --set secrets.llmJudgeApiKey="${NVIDIA_API_KEY}" \
+    --set secrets.embApiKey="${NVIDIA_API_KEY}" \
+    --set "imagePullSecrets[0].password=${NGC_API_KEY}" \
+    --namespace ${NAMESPACE} \
+    --timeout=10m
 ```
 
-## Manual Deployment
+## Documentation
 
-If you prefer manual deployment, see [knowledge/knowledge_dump_demo_workflow.md](../../knowledge/knowledge_dump_demo_workflow.md) for step-by-step instructions.
-
-## Troubleshooting
-
-- **Installation fails**: Check that prerequisites are running with `make status`
-- **Permission errors**: Verify SCC permissions with `oc get scc data-flywheel-sa -o yaml`
-- **Pod crashes**: Check logs with `oc logs -n $NAMESPACE deployment/df-api-deployment`
-
-For detailed troubleshooting, see [knowledge/knowledge_dump_DataFlywheel.md](../../knowledge/knowledge_dump_DataFlywheel.md).
+For complete installation instructions, see [INSTRUCTIONS.md](../../INSTRUCTIONS.md).
