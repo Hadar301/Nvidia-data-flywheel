@@ -1,0 +1,62 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.gateway.name }}
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app: {{ .Values.gateway.name }}
+spec:
+  replicas: {{ .Values.gateway.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.gateway.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.gateway.name }}
+    spec:
+      containers:
+      - name: nginx
+        image: {{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag }}
+        imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.gateway.port }}
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: cache
+          mountPath: /var/cache/nginx
+        - name: run
+          mountPath: /var/run
+        resources:
+          requests:
+            memory: {{ .Values.gateway.resources.requests.memory }}
+            cpu: {{ .Values.gateway.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.gateway.resources.limits.memory }}
+            cpu: {{ .Values.gateway.resources.limits.cpu }}
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.gateway.port }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: {{ .Values.gateway.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config-volume
+        configMap:
+          name: {{ .Values.gateway.name }}-config
+      - name: cache
+        emptyDir: {}
+      - name: run
+        emptyDir: {}
+{{- end }}
