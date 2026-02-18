@@ -595,7 +595,6 @@ Your cluster redirects Docker Hub pulls to a JFrog registry. The `values-openshi
 ### Documentation
 - [knowledge/knowledge_dump_demo_workflow.md](knowledge/knowledge_dump_demo_workflow.md) - Demo workflow guide and validation
 - [knowledge/knowledge_dump_NeMo.md](knowledge/knowledge_dump_NeMo.md) - NeMo Microservices troubleshooting
-- [knowledge/knowledge_dump_flywheel_prereqs.md](knowledge/knowledge_dump_flywheel_prereqs.md) - Prerequisites troubleshooting
 - [knowledge/knowledge_dump_DataFlywheel.md](knowledge/knowledge_dump_DataFlywheel.md) - Data Flywheel troubleshooting
 
 ### Scripts
