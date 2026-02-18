@@ -383,6 +383,39 @@ install_nemo_infra() {
     log_success "nemo-infra is ready"
 }
 
+# Function to patch nim-operator ClusterRole for Gateway API permissions
+patch_nim_operator_rbac() {
+    log_info "Patching nim-operator ClusterRole for Gateway API permissions..."
+
+    # Check if the ClusterRole exists
+    if ! oc get clusterrole k8s-nim-operator-role &> /dev/null; then
+        log_warn "ClusterRole k8s-nim-operator-role not found, skipping RBAC patch"
+        return 0
+    fi
+
+    # Check if gateway.networking.k8s.io permissions already exist
+    if oc get clusterrole k8s-nim-operator-role -o yaml | grep -q "gateway.networking.k8s.io"; then
+        log_info "Gateway API permissions already exist in ClusterRole"
+        return 0
+    fi
+
+    # Add Gateway API permissions to fix CrashLoopBackOff issue
+    log_info "Adding Gateway API permissions (httproutes, grpcroutes)..."
+    oc patch clusterrole k8s-nim-operator-role --type=json -p='[
+      {
+        "op": "add",
+        "path": "/rules/-",
+        "value": {
+          "apiGroups": ["gateway.networking.k8s.io"],
+          "resources": ["httproutes", "grpcroutes"],
+          "verbs": ["get", "list", "watch", "create", "update", "patch", "delete"]
+        }
+      }
+    ]' 2>/dev/null || log_warn "Failed to patch ClusterRole for Gateway API permissions"
+
+    log_success "Gateway API permissions added to ClusterRole"
+}
+
 # Function to adopt existing nemo-instances cluster resources
 adopt_instances_cluster_resources() {
     log_info "Checking for existing nemo-instances cluster resources..."
@@ -397,6 +430,11 @@ adopt_instances_cluster_resources() {
     for resource in $cluster_roles; do
         found_resources=true
         log_info "Found existing ClusterRole: $resource - adopting into Helm release..."
+
+        # Clear managedFields to remove field manager conflicts
+        log_info "Clearing managedFields for $resource to resolve field manager conflicts..."
+        oc patch clusterrole "$resource" --type=json -p='[{"op": "replace", "path": "/metadata/managedFields", "value": []}]' \
+            2>/dev/null || log_warn "Failed to clear managedFields for $resource"
 
         oc annotate clusterrole "$resource" \
             meta.helm.sh/release-name=nemo-instances \
@@ -524,6 +562,9 @@ install_nemo_instances() {
         --set llamastack.enabled=false
 
     log_success "nemo-instances installed"
+
+    # Patch nim-operator RBAC for Gateway API permissions
+    patch_nim_operator_rbac
 
     # Wait for services to be ready
     log_info "Waiting for NeMo services to be ready (this may take several minutes)..."
@@ -657,8 +698,6 @@ main() {
     install_nemo_instances
     verify_installation
     downscale_unused
-    # Display next steps
-    display_next_steps
 }
 
 # Run main function
