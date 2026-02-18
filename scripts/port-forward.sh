@@ -15,11 +15,7 @@ NAMESPACE="${NAMESPACE:-hacohen-flywheel}"
 echo "📡 Starting port-forwards for namespace: $NAMESPACE"
 
 
-oc port-forward -n $NAMESPACE svc/elasticsearch-master 9200:9200 &
-sleep 0.1
-oc port-forward -n $NAMESPACE svc/flywheel-infra-mongodb 27017:27017 &
-sleep 0.1
-oc port-forward -n $NAMESPACE svc/flywheel-infra-redis-master 6379:6379 &
+oc port-forward -n $NAMESPACE svc/df-elasticsearch-service 9200:9200 &
 sleep 0.1
 oc port-forward -n $NAMESPACE svc/nemo-gateway 8080:80 &
 sleep 0.1

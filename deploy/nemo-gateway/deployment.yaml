@@ -1,27 +1,24 @@
-{{- if .Values.gateway.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.gateway.name }}
-  namespace: {{ .Values.namespace.name }}
-  labels:
-    app: {{ .Values.gateway.name }}
+  name: nemo-gateway
+  namespace: hacohen-flywheel
 spec:
-  replicas: {{ .Values.gateway.replicas }}
+  replicas: 1
   selector:
     matchLabels:
-      app: {{ .Values.gateway.name }}
+      app: nemo-gateway
   template:
     metadata:
       labels:
-        app: {{ .Values.gateway.name }}
+        app: nemo-gateway
     spec:
       containers:
       - name: nginx
-        image: {{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag }}
-        imagePullPolicy: {{ .Values.gateway.image.pullPolicy }}
+        image: nginx:1.25-alpine
+        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: {{ .Values.gateway.port }}
+        - containerPort: 8080
           name: http
           protocol: TCP
         volumeMounts:
@@ -34,29 +31,28 @@ spec:
           mountPath: /var/run
         resources:
           requests:
-            memory: {{ .Values.gateway.resources.requests.memory }}
-            cpu: {{ .Values.gateway.resources.requests.cpu }}
+            memory: "128Mi"
+            cpu: "100m"
           limits:
-            memory: {{ .Values.gateway.resources.limits.memory }}
-            cpu: {{ .Values.gateway.resources.limits.cpu }}
+            memory: "256Mi"
+            cpu: "200m"
         livenessProbe:
           httpGet:
             path: /healthz
-            port: {{ .Values.gateway.port }}
+            port: 8080
           initialDelaySeconds: 10
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /healthz
-            port: {{ .Values.gateway.port }}
+            port: 8080
           initialDelaySeconds: 5
           periodSeconds: 5
       volumes:
       - name: config-volume
         configMap:
-          name: {{ .Values.gateway.name }}-config
+          name: nemo-gateway-config
       - name: cache
         emptyDir: {}
       - name: run
         emptyDir: {}
-{{- end }}

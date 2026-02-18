@@ -1,9 +1,8 @@
-{{- if .Values.gateway.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Values.gateway.name }}-config
-  namespace: {{ .Values.namespace.name }}
+  name: nemo-gateway-config
+  namespace: hacohen-flywheel
 data:
   nginx.conf: |
     events {
@@ -22,7 +21,7 @@ data:
       client_max_body_size 100M;
 
       server {
-        listen {{ .Values.gateway.port }};
+        listen 8080;
 
         # Health check endpoint for the gateway itself
         location /healthz {
@@ -32,7 +31,7 @@ data:
 
         # Route to Entity Store (Dataset metadata registration)
         location /v1/datasets {
-          set $upstream_entitystore {{ .Values.entitystore.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          set $upstream_entitystore nemoentitystore-sample.hacohen-flywheel.svc.cluster.local:8000;
           proxy_pass http://$upstream_entitystore;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
@@ -42,7 +41,7 @@ data:
 
         # Route to Customizer (Fine-tuning jobs, LoRA configs)
         location /v1/customization {
-          set $upstream_customizer {{ .Values.customizer.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          set $upstream_customizer nemocustomizer-sample.hacohen-flywheel.svc.cluster.local:8000;
           proxy_pass http://$upstream_customizer;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
@@ -52,7 +51,7 @@ data:
 
         # Route to Evaluator (Model evaluation jobs)
         location /v1/evaluation {
-          set $upstream_evaluator {{ .Values.evaluator.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          set $upstream_evaluator nemoevaluator-sample.hacohen-flywheel.svc.cluster.local:8000;
           proxy_pass http://$upstream_evaluator;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
@@ -62,7 +61,7 @@ data:
 
         # Route to Guardrails (Safety filters)
         location /v1/guardrails {
-          set $upstream_guardrail {{ .Values.guardrail.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          set $upstream_guardrail nemoguardrails-sample.hacohen-flywheel.svc.cluster.local:8000;
           proxy_pass http://$upstream_guardrail;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
@@ -72,7 +71,7 @@ data:
 
         # Route to Entity Store (Model metadata, PEFT models)
         location /v1/entity-store {
-          set $upstream_entitystore {{ .Values.entitystore.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          set $upstream_entitystore nemoentitystore-sample.hacohen-flywheel.svc.cluster.local:8000;
           proxy_pass http://$upstream_entitystore;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
@@ -82,7 +81,7 @@ data:
 
         # Route for namespaces (needed by Data Flywheel - routes to Entity Store)
         location /v1/namespaces {
-          set $upstream_entitystore {{ .Values.entitystore.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          set $upstream_entitystore nemoentitystore-sample.hacohen-flywheel.svc.cluster.local:8000;
           proxy_pass http://$upstream_entitystore;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
@@ -92,7 +91,7 @@ data:
 
         # Route for datastore namespace operations
         location /v1/datastore {
-          set $upstream_datastore {{ .Values.datastore.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          set $upstream_datastore nemodatastore-sample.hacohen-flywheel.svc.cluster.local:8000;
           proxy_pass http://$upstream_datastore;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
@@ -102,7 +101,7 @@ data:
 
         # Route for HuggingFace API (through Datastore)
         location /v1/hf {
-          set $upstream_datastore {{ .Values.datastore.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          set $upstream_datastore nemodatastore-sample.hacohen-flywheel.svc.cluster.local:8000;
           proxy_pass http://$upstream_datastore;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
@@ -113,7 +112,7 @@ data:
         # Route Git/LFS operations to Datastore (for HuggingFace Hub compatibility)
         # Matches paths like: /{namespace}/{repo}.git/info/lfs/...
         location ~ ^/[^/]+/.+\.git/ {
-          set $upstream_datastore {{ .Values.datastore.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          set $upstream_datastore nemodatastore-sample.hacohen-flywheel.svc.cluster.local:8000;
           proxy_pass http://$upstream_datastore;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
@@ -145,7 +144,7 @@ data:
 
         # Route for customized model metadata - proxy to Entity Store
         location ~ ^/v1/models/[^/]+/customized-.+$ {
-          set $upstream_entitystore {{ .Values.entitystore.name }}.{{ .Values.namespace.name }}.svc.cluster.local:8000;
+          set $upstream_entitystore nemoentitystore-sample.hacohen-flywheel.svc.cluster.local:8000;
           proxy_pass http://$upstream_entitystore;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
@@ -160,4 +159,3 @@ data:
         }
       }
     }
-{{- end }}
